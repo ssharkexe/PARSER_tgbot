@@ -1,0 +1,13 @@
+html_data/codashop.html
+html_data/freefire_seagm.html
+html_data/legends_seagm.html
+html_data/pubg_seagm.html
+json_data/coda_arenamania.json
+json_data/coda_freefire.json
+json_data/coda_legends.json
+json_data/coda_miko.json
+json_data/coda_pool.json
+json_data/coda_pubg.json
+json_data/coda_wwh.json
+tests.json
+secret.py
