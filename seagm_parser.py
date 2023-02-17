@@ -34,30 +34,12 @@ def seagm_parse(game):
         soup = BeautifulSoup(fp, "html.parser") 
     dict1 = soup.find(string=re.compile('gtmDataObject'))
     dict1 = dict1.split('prodectBuyList: ')[1]
-    dict1 = dict1.split(',\n    });')[0]
-    dict1 = dict1.split('[{')[1]
-    dict1 = dict1.split('}]')[0]
-    dict1 = dict1.split('},{')
-    #print(dict1)
-    #dict2 = '{' + dict1[0] + '}'
-    #print(dict2)
-    #dict2 = json.loads(dict2)
-    #print(dict2)
+    result = [match.groups() for match in re.finditer(r'"item_name":"([a-zA-Z0-9 ._+-]+)","price":"([0-9.]+)"[^}{]*"discount":"([0-9 .]+)","currency":"([A-Z]+)"', dict1)]
     addons_full_string = f'{game}'
-    for i in dict1:
-        game_addons = json.loads('{' + i + '}')
-        #print(game_addons)
-        try:
-            discount = game_addons['dbrule_description'].split('Discount: ')[1]
-            discount = float(discount.split('%')[0])
-        except IndexError as e:
-            discount = 0
-        full_desc = str(game_addons['item_name']) + ' цена: ' + str(round(float(game_addons['price']) * (1 - discount / 100), 2)) + ' ' + str(game_addons['currency']) + ' (скидка ' + str(discount) + '%)'
+    for i in result:
+        full_desc = f'{i[0]} - {round(float(i[1])-float(i[2]), 2)} {i[3]}'
         addons_full_string = addons_full_string + '\n' + full_desc
-        #print(discount)
-        #print(game_addons)
-        #print(full_desc)
-        #print('--------')
     print(addons_full_string)
     return addons_full_string
-    #game1 = dict.fromkeys(dict1)
+
+seagm_parse('freefire_seagm')
