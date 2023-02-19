@@ -16,7 +16,7 @@ seagm_button_list = [types.InlineKeyboardButton(text=re.split(r'_seagm', key)[0]
 SEAGM_GAMES_BUTTON.add(*seagm_button_list)
 
 CODA_GAMES_BUTTON = types.InlineKeyboardMarkup(row_width=2)
-coda_button_list = [types.InlineKeyboardButton(text = re.split(r'_coda', key)[0], callback_data=key) for key in coda.coda_url_dict.keys()]
+coda_button_list = [types.InlineKeyboardButton(text = re.split(r'coda_', key)[1], callback_data=key) for key in coda.coda_url_dict.keys()]
 CODA_GAMES_BUTTON.add(*coda_button_list)
 
 # Функция, обрабатывающая команду /start
