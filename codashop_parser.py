@@ -82,7 +82,7 @@ def codashop_parse(game):
             print(f'Цены на аддоны к {name}:')
         else:
             pass
-    game_text = f'{game}\n'
+    game_text = f'🔹 {game} 🔹\n'
     for i in codashop_data: # парсим список из цен и методов оплаты, для каждого метода из списка payment_channels отображаем цену (зная, что цена всегда идет после названия метода оплаты)
         game_addon_list = i.split(', ')
         game_addon_default_price = game_addon_list[-1]

@@ -1,7 +1,7 @@
 # Бот-парсер сайтов для сравнения цен
 # t.me/coda_parser_bot
 
-import seagm_parser as seagm, codashop_parser as coda, secret
+import seagm_parser as seagm, codashop_parser as coda, secret, re
 from aiogram import Bot, Dispatcher, executor, types 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import time
@@ -9,15 +9,15 @@ from datetime import time
 # Формируем инлайн кнопки
 CODA_BTN = InlineKeyboardButton('Codashop', callback_data='coda')
 SEAGM_BTN = InlineKeyboardButton('SEAGM', callback_data='seagm')
-MAIN_MENU_BTNS = InlineKeyboardMarkup().add(CODA_BTN, SEAGM_BTN)
+MAIN_MENU_BTNS = InlineKeyboardMarkup(row_width=2).add(CODA_BTN, SEAGM_BTN)
 
-SEAGM_GAMES_BUTTON = types.InlineKeyboardMarkup(resize_keyboard = True)
-for key, value in seagm.seagm_url_dict.items():
-    SEAGM_GAMES_BUTTON.row(types.InlineKeyboardButton(text=key, callback_data=key))
+SEAGM_GAMES_BUTTON = types.InlineKeyboardMarkup(row_width=2)
+seagm_button_list = [types.InlineKeyboardButton(text=re.split(r'_seagm', key)[0], callback_data=key) for key in seagm.seagm_url_dict.keys()]
+SEAGM_GAMES_BUTTON.add(*seagm_button_list)
 
-CODA_GAMES_BUTTON = types.InlineKeyboardMarkup(resize_keyboard = True)
-for key, value in coda.coda_url_dict.items():
-    CODA_GAMES_BUTTON.row(types.InlineKeyboardButton(text=key, callback_data=key))
+CODA_GAMES_BUTTON = types.InlineKeyboardMarkup(row_width=2)
+coda_button_list = [types.InlineKeyboardButton(text = re.split(r'_coda', key)[0], callback_data=key) for key in coda.coda_url_dict.keys()]
+CODA_GAMES_BUTTON.add(*coda_button_list)
 
 # Функция, обрабатывающая команду /start
 async def start(message: types.Message):

@@ -8,6 +8,7 @@ seagm_url_dict = {
     'pubg_seagm':'https://www.seagm.com/fr/pubg-mobile-uc-top-up-global',
     'legends_seagm':'https://www.seagm.com/fr/mobile-legends-diamonds-top-up',
     'freefire_seagm':'https://www.seagm.com/fr/free-fire-diamonds-top-up',
+    'punishing_seagm':'https://www.seagm.com/fr/google-play-gift-card-netherlands'
     }
 
 # Параметры для html запросов
@@ -35,11 +36,11 @@ def seagm_parse(game):
     dict1 = soup.find(string=re.compile('gtmDataObject'))
     dict1 = dict1.split('prodectBuyList: ')[1]
     result = [match.groups() for match in re.finditer(r'"item_name":"([a-zA-Z0-9 ._+-]+)","price":"([0-9.]+)"[^}{]*"discount":"([0-9 .]+)","currency":"([A-Z]+)"', dict1)]
-    addons_full_string = f'{game}'
+    addons_full_string = f'🔹 {game} 🔹\n'
     for i in result:
         full_desc = f'{i[0]} - {round(float(i[1])-float(i[2]), 2)} {i[3]}'
         addons_full_string = addons_full_string + '\n' + full_desc
     print(addons_full_string)
     return addons_full_string
 
-seagm_parse('freefire_seagm')
+#seagm_parse('legends_seagm')
