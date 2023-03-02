@@ -1,65 +1,149 @@
 # Бот-парсер сайтов для сравнения цен
+# codashop.com и seagm.com
 # t.me/coda_parser_bot
 
-import seagm_parser as seagm, codashop_parser as coda, secret, re
+import seagm_parser as seagm, codashop_parser as coda, secret, re, json, dbdata as db, buttons as kb
 from aiogram import Bot, Dispatcher, executor, types 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import time
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters.state import StatesGroup, State
 
-# Формируем инлайн кнопки
-CODA_BTN = InlineKeyboardButton('Codashop', callback_data='coda')
-SEAGM_BTN = InlineKeyboardButton('SEAGM', callback_data='seagm')
-MAIN_MENU_BTNS = InlineKeyboardMarkup(row_width=2).add(CODA_BTN, SEAGM_BTN)
-
-SEAGM_GAMES_BUTTON = types.InlineKeyboardMarkup(row_width=2)
-seagm_button_list = [types.InlineKeyboardButton(text=re.split(r'_seagm', key)[0], callback_data=key) for key in seagm.seagm_url_dict.keys()]
-SEAGM_GAMES_BUTTON.add(*seagm_button_list)
-
-CODA_GAMES_BUTTON = types.InlineKeyboardMarkup(row_width=2)
-coda_button_list = [types.InlineKeyboardButton(text = re.split(r'coda_', key)[1], callback_data=key) for key in coda.coda_url_dict.keys()]
-CODA_GAMES_BUTTON.add(*coda_button_list)
+class GameAddonsMenu(StatesGroup):
+    choosing_addon = State()
 
 # Функция, обрабатывающая команду /start
 async def start(message: types.Message):
-    await message.answer(text='Приветики! Выбери, что будем парсить:',
-                         reply_markup=MAIN_MENU_BTNS)
+    await message.answer(text="""Привет, Даша! Я немного обновился, теперь сохраняю все данные в SQL-базу.\n
+Вот список игр, по которым я могу выгрузить данные c SEAGM и Codashop. Или можешь выбрать магазин и посмотреть все игры из него.""",
+                         reply_markup=kb.list_of_all_shop_games_kb())
+    state = Dispatcher.get_current().current_state()
+    await state.finish()
+
+# Хендлер для возврата в главное меню
+async def back_to_main_menu(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_reply_markup()
+    await bot.answer_callback_query(callback_query.id)
+    await bot.send_message(callback_query.from_user.id, text='Главное меню:', reply_markup=kb.list_of_all_shop_games_kb())
+    state = Dispatcher.get_current().current_state()
+    await state.finish()
 
 # Хендлер для построения меню кнопок
 async def games_menu(callback_query: types.CallbackQuery):
-    if callback_query.data == 'coda':
-        await bot.answer_callback_query(callback_query.id)
-        await bot.send_message(callback_query.from_user.id, text='Список игр, доступных для парсинга через codashop:', reply_markup=CODA_GAMES_BUTTON)
-    elif callback_query.data == 'seagm':
-        await bot.answer_callback_query(callback_query.id)
-        await bot.send_message(callback_query.from_user.id, text='Список игр, доступных для парсинга через SEAGM:', reply_markup=SEAGM_GAMES_BUTTON)
-
-# Хэндлер коллбэка для инлайн-кнопки игр CODASHOP
-async def coda_games_data(callback_query: types.CallbackQuery):
+    shop = callback_query.data
+    await callback_query.message.delete()
     await bot.answer_callback_query(callback_query.id)
-    coda.get_codashop_data(str(callback_query.data))
-    print(callback_query.data)
+    await bot.send_message(callback_query.from_user.id, text=f'Список игр, доступных для парсинга через {shop}:', reply_markup=kb.list_of_games_kb(shop))
+
+# Хэндлер меню игры
+async def game_menu(callback_query: types.CallbackQuery):
+    await callback_query.message.delete()
+    # await callback_query.message.edit_reply_markup()
+    await bot.answer_callback_query(callback_query.id)
+    game_id = callback_query.data
+    game_data = db.get_game_info(game_id)
+    game_name = game_data[0]
+    last_updated = game_data[1]
+    # -------Сохраняем атрибуты в машину состояний
+    # await ShowAddons.game.set()
+    # state = Dispatcher.get_current().current_state()
+    # await state.update_data(game_id=game_id, game_name=game_name, coda_url=game_data[2], seagm_url=game_data[3]) # сохраняем в память FSM id, name, url игры
+    # -------
+    if game_data[2] == '':
+        codashop = '❌'
+    else:
+        codashop = '✅'
+    if game_data[3] == '':
+        seagm = '❌'
+    else:
+        seagm = '✅'
+    try:
+        await bot.send_message(
+            callback_query.from_user.id,
+            text=f'<b>{game_name}</b>\nОбновлено:\n{last_updated:%d.%m.%Y %H:%M}\n{codashop} Codashop\n{seagm} SEAGM', parse_mode='HTML',
+            reply_markup=kb.make_inline_keyboard(3, game_id))
+    except TypeError:
+        await bot.send_message(
+            callback_query.from_user.id,
+            text=f'<b>{game_name}</b>\nОбновлено:\n❌\n{codashop} Codashop\n{seagm} SEAGM', parse_mode='HTML',
+            reply_markup=kb.make_inline_keyboard(2, game_id))
+
+# Хэндлер коллбэка для обновление данных в базе
+async def update_games_data(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_reply_markup()
+    game_id = callback_query.data.split('update_')[-1]
+    await bot.answer_callback_query(callback_query.id)
+    data_coda = coda.get_codashop_data(game_id=game_id, shop_id=1)
+    data_seagm = seagm.get_seagm_data(game_id=game_id, shop_id=2)
+    updated_text = f'{data_coda}\n{data_seagm}\n{db.get_game_info(game_id)[1]:%d.%m.%Y %H:%M}'
     await bot.send_message(
         callback_query.from_user.id,
-        text=coda.codashop_parse(str(callback_query.data)),
-        reply_markup=MAIN_MENU_BTNS)
+        text=updated_text,
+        reply_markup=kb.make_inline_keyboard(3, game_id))
 
 # Хэндлер коллбэка для инлайн-кнопки игр SEAGM
 async def seagm_games_data(callback_query: types.CallbackQuery):
+    await callback_query.message.delete()
+    #await callback_query.message.edit_reply_markup()
     await bot.answer_callback_query(callback_query.id)
     seagm.get_html_content(str(callback_query.data))
-    print(callback_query.data)
+    params = seagm.seagm_parse(str(callback_query.data))
+    if isinstance(params, (list, tuple)):
+        #print(params)
+        await GameAddonsMenu.choosing_addon.set()
+        state = Dispatcher.get_current().current_state()
+        print(state)
+        await state.update_data(name_list=params[0], url_list=params[1], game=str(callback_query.data)) # сохраняем в память FSM список аддонов, список url и название самой игры
+        SEAGM_GIFTCARD_BTN = InlineKeyboardMarkup(row_width=1) 
+        seagm_giftcard_list = [InlineKeyboardButton(text = name, callback_data = name) for name, url in zip(params[0], params[1])] # формируем перечень из разделов с аддонами
+        #print(seagm_giftcard_list)
+        SEAGM_GIFTCARD_BTN.add(*seagm_giftcard_list)
+        await bot.send_message(
+            callback_query.from_user.id,
+            text='У игры есть несколько разделов по продаже аддонов:',
+            reply_markup=SEAGM_GIFTCARD_BTN)
+    #print(callback_query.data)
+    else:
+        await bot.send_message(
+            callback_query.from_user.id,
+            text=seagm.seagm_parse(str(callback_query.data)),
+            reply_markup=MAIN_MENU_BTNS)
+
+# Хэндлер коллбэка для инлайн-кнопки гифткарт SEAGM
+async def seagm_giftcards_data(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
+    #await callback_query.message.edit_reply_markup() # или удаление сообщения целиком, или скрытие inline кнопок
+    data = await state.get_data()
     await bot.send_message(
-        callback_query.from_user.id,
-        text=seagm.seagm_parse(str(callback_query.data)),
-        reply_markup=MAIN_MENU_BTNS)
+            callback_query.from_user.id,
+            text=seagm.seagm_addon_parse(url=data['url_list'][data['name_list'].index(callback_query.data)], game = callback_query.data),
+            reply_markup=MAIN_MENU_BTNS)
+    await state.finish()
+
+
+# Хэндлер отображения списка аддонов из базы по конкретной игре
+async def show_addons_from_db(callback_query: types.CallbackQuery):
+    await callback_query.message.edit_reply_markup()
+    print(f'В колбэке приходит: {callback_query.data}')
+    game_id = callback_query.data.split('addons_')[-1]
+    await bot.send_message(
+            callback_query.from_user.id,
+            text=db.get_addons(game_id), parse_mode='HTML',
+            reply_markup=kb.make_inline_keyboard(3, game_id))
 
 # Запускаем бота
 if __name__ == '__main__':
     bot = Bot(token=secret.API_KEY)
-    dp = Dispatcher(bot)
+    storage = MemoryStorage()
+    dp = Dispatcher(bot, storage=storage)
     dp.register_message_handler(start, commands='start')
-    dp.register_callback_query_handler(games_menu, text=['coda', 'seagm'])
-    dp.register_callback_query_handler(coda_games_data, text=coda.coda_url_dict.keys())
-    dp.register_callback_query_handler(seagm_games_data, text=seagm.seagm_url_dict.keys())
+    # dp.register_callback_query_handler(seagm_giftcards_data, state=GameAddonsMenu.choosing_addon)
+    dp.register_callback_query_handler(update_games_data, text_contains='update_')
+    dp.register_callback_query_handler(show_addons_from_db, text_contains='addons_')
+    dp.register_callback_query_handler(games_menu, text=[i['name'] for i in db.Shop.select(db.Shop.name).dicts()])
+    dp.register_callback_query_handler(back_to_main_menu, state='*', text='back')
+    dp.register_callback_query_handler(game_menu, text=[i for i in db.Game.select(db.Game.id)])
+    # dp.register_callback_query_handler(seagm_games_data, text=seagm.seagm_url_dict.keys())
     executor.start_polling(dp, skip_updates=True)
     
