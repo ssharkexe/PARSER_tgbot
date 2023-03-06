@@ -25,6 +25,14 @@ class PaymentChannel(BaseModel):
     id = AutoField(primary_key = True)
     name = CharField(unique = True, null=False)
 
+class PaymentChannelCode(BaseModel):
+    code = IntegerField(primary_key = True)
+    paymentchannel_id = ForeignKeyField(PaymentChannel)
+
+class Region(BaseModel):
+    code = CharField(primary_key = True)
+    country = CharField(null=False)
+
 class GameAddon(BaseModel):
     id = AutoField(primary_key = True)
     name = CharField(null=False)
@@ -33,12 +41,13 @@ class GameAddon(BaseModel):
     payment_channel_id = ForeignKeyField(PaymentChannel)
     price = FloatField(null=False)
     currency = CharField(null=False)
+    region = ForeignKeyField(Region)
     updated = DateTimeField(default = datetime.datetime.now)
 
     class Meta:
         indexes = (
             # create a unique on name/game/shop/payment
-            (('name', 'game_id', 'shop_id', 'payment_channel_id'), True),)
+            (('name', 'game_id', 'shop_id', 'payment_channel_id', 'region'), True),)
 
 class GameUrl(BaseModel):
     id = AutoField(primary_key = True)
@@ -100,38 +109,36 @@ def get_all_shops_games(shop):
     else:
         pass
 
-def get_game_info(game_id):
+def get_game_info(game_id, region_code):
     game_name = ''
     last_updated = ''
     codashop_url = ''
     seagm_url = ''
     try:
         game_name = Game.get(id=game_id).name
-        last_updated = GameAddon.select(fn.MAX(GameAddon.updated)).where(GameAddon.game_id==game_id).scalar()
+        last_updated = GameAddon.select(fn.MAX(GameAddon.updated)).where(GameAddon.game_id==game_id, GameAddon.region==region_code).scalar()
         codashop_url = GameUrl.get(shop_id=1, game_id=game_id).url
         seagm_url = GameUrl.get(shop_id=2, game_id=game_id).url
     except GameUrl.DoesNotExist:
         pass
     return game_name, last_updated, codashop_url, seagm_url
 
-
-
-def get_addons(game_id):
+def get_addons(game_id, region_code):
     try:
-        addons_list = [i.name for i in GameAddon.select(GameAddon.name).distinct().where(GameAddon.game_id==game_id)]
+        addons_list = [i.name for i in GameAddon.select(GameAddon.name).distinct().where(GameAddon.game_id==game_id, GameAddon.region==region_code)]
         message_text = ''
         for addon in addons_list:
             message_text = message_text + f'<b>{addon}:</b>\n'
-            for b in GameAddon.select(GameAddon.price, GameAddon.currency, PaymentChannel.name, Shop.name).join(Shop).switch(GameAddon).join(PaymentChannel).where(GameAddon.name==addon, GameAddon.game_id==game_id):
+            for b in GameAddon.select(GameAddon.price, GameAddon.currency, PaymentChannel.name, Shop.name).join(Shop).switch(GameAddon).join(PaymentChannel).where(GameAddon.name==addon, GameAddon.game_id==game_id, GameAddon.region==region_code):
                 message_text = message_text + f'{b.price} {b.currency}, {b.payment_channel_id.name}, {b.shop_id.name}\n'
     except GameUrl.DoesNotExist:
         pass
     print(message_text)
     return message_text
 
-#print([i['name'] for i in Shop.select(Shop.name).dicts()])
+# print(PaymentChannel.get(PaymentChannel.id == PaymentChannelCode.get(code=1201).paymentchannel_id).id)
 
-# print(get_addons(10))
+#print([i['name'] for i in Shop.select(Shop.name).dicts()])
 
 # print([f'{i.name} : {i.price}, {i.payment_channel_id.name}, {i.shop_id.name}\n' for i in GameAddon.select(GameAddon.name, GameAddon.price, PaymentChannel.name, Shop.name).join(Shop).switch(GameAddon).join(PaymentChannel)])
 
@@ -149,17 +156,32 @@ def get_addons(game_id):
 # for i in Game.select(Game.id):
 #     print(i)
 
-# Game.create_table()
+# Region.create_table()
 # Shop.create_table()
-# PaymentChannel.create_table()
+# PaymentChannelCode.drop_table()
+# PaymentChannelCode.create_table()
 # GameAddon.create_table()
-# GameUrl.create_table()
-# GameUrl.drop_table()
+# PaymentChannelCode.create_table()
+# GameAddon.drop_table()
+
+# for key, value in payment_codes.items():
+#     PaymentChannelCode.create(code=key, paymentchannel_id=value)
+
+# 1,PayPal
+# PaymentChannel.create(name='PayPal', codes='754,756,759,760,762')
+# 2,Kreditkarte
+# PaymentChannel.create(name='Card', codes='1000,1002,1003,1004,1007')
+# 3,GiroPay
+# PaymentChannel.create(name='GiroPay', codes='900')
+# 4,Paysafecard
+# PaymentChannel.create(name='Paysafecard', codes='518')
+# PaymentChannel.create(name='Codacash', codes='1201')
+# PaymentChannel.create(name='iDeal', codes='901')
 
 # pubg = Game.create(name='PUBG')
 # coda = Shop.create(name='Codashop', url='https://codashop.com')
 # seagm = Shop.create(name='SEAGM', url='https://www.seagm.com')
-# GameUrl.create(game_id=1, shop_id = 2, url = 'https://www.seagm.com/fr/pubg-mobile')
+# Region.create(code='gb', country = 'Great Britain')
 # , 'Kreditkarte', 'GiroPay', 'Paysafecard'
 
 # for key, value in seagm_url_dict.items():

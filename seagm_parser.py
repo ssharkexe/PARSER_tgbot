@@ -3,39 +3,83 @@
 import requests, re, json, dbdata as db
 from bs4 import BeautifulSoup
 
-# Список URL для парсинга seagm
-seagm_url_dict = {
-    'pubg_seagm':'https://www.seagm.com/fr/pubg-mobile',
-    'legends_seagm':'https://www.seagm.com/fr/mobile-legends',
-    'freefire_seagm':'https://www.seagm.com/fr/free-fire-battlegrounds',
-    'punishing_seagm':'https://www.seagm.com/fr/punishing-gray-raven',
-    'wwh_seagm':'https://www.seagm.com/fr/world-war-heroes',
-    'lotr_seagm':'https://www.seagm.com/fr/lotr-rise-to-war-gems',
-    'pool_seagm':'https://www.seagm.com/fr/8-ball-pool-coin-cash',
-    'tamashi_seagm':'https://www.seagm.com/fr/tamashi-rise-of-yokai',
-    'tsubasa_seagm':'https://www.seagm.com/fr/captain-tsubasa-dream-team',
-    }
-
 # Параметры для html запросов
-html_parameters = {'lang': 'en'}
+html_parameters = {'accept-language': 'en-US', 
+                   'user-Agent': 'Mozilla/5.0'}
+
+headers = {
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-encoding': 'gzip, deflate, br',
+            'accept-language': 'en-US,en;q=0.9',
+            'cache-control': 'max-age=0',
+            'content-type':'application/x-www-form-urlencoded',
+            'content-length': '121',
+            'origin': 'https://www.seagm.com',
+            'sec-ch-ua': '"Chromium";v="110", "Not A(Brand";v="24", "Google Chrome";v="110"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': "macOS",
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+            }
+
+headers2 = {
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-encoding': 'gzip, deflate, br',
+            'accept-language': 'en-US,en;q=0.9',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+            }
+
+cookies = {
+    'seagm_store_id':'lf1sof51i9r28ql3or03kfiflu',
+    '__cf_bm':'QZ6qOlY4ixwzznfAmI0APTrqG6qKy5A0uaW6242mYM-1678012716-0-AZEt8oGcp4gSXyj4UdjZq3S02FsI9B3v924x0a9h7eax5gM71N0oPNf2+AGYA5TNVlH4C7AweGs0vzW/m4rqEaJYDWhy9KP4fBShbqqX8ySZeia/HEdcKhsruIaDimQ5pbbDUpZHUiXe67UejvN3jPg='
+}
+
+# s = requests.Session()
+# s.headers.update(headers2)
+# s.cookies.clear()
+# s.cookies.set('seagm_store_id', 'lf1sof51i9r28ql3or03kfiflu')
+# s.get('https://www.seagm.com/es/', headers=headers2)
+# resp = requests.get('https://www.seagm.com/es-es/pubg-mobile-uc-top-up-global')
+# post_params = {'region': 'ru', 'region_lang': 'none', 'language': 'es', 'currency': 'EUR', 'request_uri': '/es'}
+# query_params = {'csrfToken': '055c4d7a90450934a43e34e920688f58'}
+# resp = s.post("https://www.seagm.com/es/setting", params=query_params, data=post_params, headers=headers)
+# print(resp.url)
+# my_cookies = requests.utils.dict_from_cookiejar(s.cookies)
+# print(my_cookies)
+# print(resp.status_code)
+# resp = s.get('https://www.seagm.com/es/pubg-mobile-uc-top-up-global')
+
+# print(resp.text)
 
 # Получаем html по игре
-def get_seagm_data(game_id, shop_id):
+def get_seagm_data(game_id, shop_id, region_code):
     try:
-        addon_url = db.Shop.get(id=shop_id).url
-        game_url = ''.join([addon_url, db.GameUrl.get(db.GameUrl.game_id == game_id, db.GameUrl.shop_id == shop_id).url])
-        print(game_url)
-        response = requests.get(game_url, html_parameters) 
-        soup = BeautifulSoup(response.text, 'html.parser')
-        # print(soup)
-        # with open(f'html_data/{html_filename}', "w") as f:
-        #     f.write(response.text)
-        return seagm_parse(game_id, soup, shop_id)
+        shop_url = db.Shop.get(id=shop_id).url
+        game_url = f'{shop_url}/{region_code}/{db.GameUrl.get(db.GameUrl.game_id == game_id, db.GameUrl.shop_id == shop_id).url}'
+        s = requests.Session()
+        s.cookies.set('seagm_store_id', 'lf1sof51i9r28ql3or03kfiflu')
+        # post_params = {'region': 'es', 'region_lang': 'none', 'language': 'es', 'currency': 'EUR', 'request_uri': '/es'}
+        # resp = requests.post("https://www.seagm.com/es/setting?csrfToken=9513fd10e7fe17d3b55ede554763d921", data=post_params)
+        # print(resp.text)
+        response = s.get(game_url) 
+        if response.status_code == 404:
+            return f'🟠 Некорректный url игры на SEAGM'
+        else:
+            print(requests.utils.dict_from_cookiejar(s.cookies))
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # print(soup)
+            # with open(f'html/test.html', "w") as f:
+            #     f.write(response.text)
+            return seagm_parse(game_id, soup, shop_id, region_code)
     except db.GameUrl.DoesNotExist:
         return f'{db.Game.get(id=game_id).name} нет в SEAGM'
 
 # Функция парсинга страницы seagm с аддонами
-def seagm_parse(game_id, data, shop_id):
+def seagm_parse(game_id, data, shop_id, region_code):
     # html_filename = str(list(seagm_url_dict.keys())[list(seagm_url_dict.keys()).index(game)]) + '.html'
     # for name, link in seagm_url_dict.items(): # из параметра game (это урл игры из словаря) выбираем название игры
     #     if link == game:
@@ -49,9 +93,9 @@ def seagm_parse(game_id, data, shop_id):
         data = data.split('prodectBuyList: ')[1]
     except AttributeError:
         print('Некорректный url для игры на seagm.com')
-        return f'Некорректный url для игры на seagm.com' # seagm_parse_giftcard(game)
+        return f'🟠 Некорректный url для игры на seagm.com' # seagm_parse_giftcard(game)
     else:
-        return seagm_final_parse(game_id, data, shop_id)
+        return seagm_final_parse(game_id, data, shop_id, region_code)
 
 # Функция парсинга страницы seagm с аддонами
 def seagm_addon_parse(url, game):
@@ -63,7 +107,7 @@ def seagm_addon_parse(url, game):
     except AttributeError:
         print('Ошибка парсинга')
     else:
-        return f'Некорректный url для игры на seagm.com' # seagm_final_parse(dict1, game)
+        return f'🟠 Некорректный url для игры на seagm.com' # seagm_final_parse(dict1, game)
 
 # Тестовая функция для парсинга html seagm со списком гифткарт для игры
 def seagm_parse_giftcard(game):
@@ -80,7 +124,7 @@ def seagm_parse_giftcard(game):
     print(giftcard_url_list)
     return giftcard_name_list, giftcard_url_list
 
-def seagm_final_parse(game_id, data, shop_id):
+def seagm_final_parse(game_id, data, shop_id, region_code):
     result = [match.groups() for match in re.finditer(r'"item_name":"([a-zA-Z0-9 ._+-]+)","price":"([0-9.]+)"[^}{]*"discount":"([0-9 .]+)","currency":"([A-Z]+)"', data)]
     # addons_full_string = f'🔹 {game} 🔹\n'
     # print(result)
@@ -95,11 +139,12 @@ def seagm_final_parse(game_id, data, shop_id):
                                     shop_id = shop_id, 
                                     payment_channel_id = 2,
                                     price = price,  
-                                    currency = i[3]).execute()
+                                    currency = i[3],
+                                    region = region_code).execute()
             db.Game(id=game_id).save()
         except db.PaymentChannel.DoesNotExist:
             pass
-    return f'Сохранил данные seagm по {db.Game.get(id=game_id).name}'
+    return f'🟢 Сохранил данные SEAGM по {db.Game.get(id=game_id).name}'
 
 #seagm_parse_giftcard('rampage')
 #get_html_content('rampage')
