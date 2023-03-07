@@ -61,7 +61,7 @@ def get_seagm_data(game_id, shop_id, region_code):
         shop_url = db.Shop.get(id=shop_id).url
         game_url = f'{shop_url}/{region_code}/{db.GameUrl.get(db.GameUrl.game_id == game_id, db.GameUrl.shop_id == shop_id).url}'
         s = requests.Session()
-        s.cookies.set('seagm_store_id', 'lf1sof51i9r28ql3or03kfiflu')
+        s.cookies.set('seagm_store_id', 'p999gj39mn09gq5djits0esr0a')
         # post_params = {'region': 'es', 'region_lang': 'none', 'language': 'es', 'currency': 'EUR', 'request_uri': '/es'}
         # resp = requests.post("https://www.seagm.com/es/setting?csrfToken=9513fd10e7fe17d3b55ede554763d921", data=post_params)
         # print(resp.text)
