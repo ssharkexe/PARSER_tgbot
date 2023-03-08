@@ -36,7 +36,7 @@ async def back_to_main_menu(callback_query: types.CallbackQuery):
 
 # Хендлер для построения меню кнопок
 async def games_menu(callback_query: types.CallbackQuery):
-    shop = callback_query.data.split('_')[-2]
+    shop = callback_query.data.split('_')[0]
     region_code = callback_query.data.split('_')[-1]
     country = db.Region.get(code=region_code).country
     await callback_query.message.delete()
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     # dp.register_callback_query_handler(seagm_giftcards_data, state=GameAddonsMenu.choosing_addon)
     dp.register_callback_query_handler(update_games_data, text_contains='update_')
     dp.register_callback_query_handler(show_addons_from_db, text_contains='addons_')
-    dp.register_callback_query_handler(games_menu, text_contains=[i['name'] for i in db.Shop.select(db.Shop.name).dicts()])
+    dp.register_callback_query_handler(games_menu, lambda msg: any(i['name'] in msg.data for i in db.Shop.select(db.Shop.name).dicts()), state='*')
     dp.register_callback_query_handler(back_to_main_menu, lambda msg: any(i in msg.data for i in ['region_', 'back_']), state='*')
     dp.register_callback_query_handler(region_settings, state='*', text='reg_settings')
     dp.register_callback_query_handler(game_menu, lambda msg: any(i in msg.data for i in [f'game_{i}' for i in db.Game.select(db.Game.id)]))
