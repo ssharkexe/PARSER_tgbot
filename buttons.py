@@ -2,6 +2,7 @@ import dbdata as db
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 region_button = InlineKeyboardButton('🌍 Регион', callback_data='reg_settings')
+csv_export_button = InlineKeyboardButton('📝 Скачать в CSV', callback_data='csv_export')
 
 # инлайн клавиатура конкретной игры, кнопки "показать аддоны/обновить/назад"
 def make_inline_keyboard(row_width, game_id, region_code):
@@ -33,7 +34,7 @@ def list_of_all_shop_games_kb(region_code):
     ALL_SHOP_GAMES_KB = InlineKeyboardMarkup(row_width=2)
     shop_list = [InlineKeyboardButton(text = '🛒 ' + i['name'], callback_data=i['name'] + '_' + region_code) for i in db.Shop.select(db.Shop.id, db.Shop.name).dicts()]
     button_list = [InlineKeyboardButton(text = i['name'], callback_data='game_' + str(i['game_id']) + '_' + region_code) for i in db.get_all_shops_games('all')]
-    ALL_SHOP_GAMES_KB.add(*shop_list, *button_list, region_button)
+    ALL_SHOP_GAMES_KB.add(*shop_list, *button_list, region_button, csv_export_button)
     return ALL_SHOP_GAMES_KB
 
 # инлайн клавиатура со списком регионов

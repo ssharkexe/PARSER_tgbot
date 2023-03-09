@@ -151,6 +151,12 @@ async def region_settings(callback_query: types.CallbackQuery):
             text='Выбери страну:', parse_mode='HTML',
             reply_markup=kb.regions_kb())
 
+# Хэндлер отправки ботом файла со всеми данными 
+async def send_csv_data(callback_query: types.CallbackQuery):
+  db.get_csv_data()
+  doc = open('game_addon_data.csv', 'rb')
+  await bot.send_document(callback_query.from_user.id, document=doc)
+
 # Запускаем бота
 if __name__ == '__main__':
     bot = Bot(token=secret.API_KEY)
@@ -164,6 +170,7 @@ if __name__ == '__main__':
     dp.register_callback_query_handler(back_to_main_menu, lambda msg: any(i in msg.data for i in ['region_', 'back_']), state='*')
     dp.register_callback_query_handler(region_settings, state='*', text='reg_settings')
     dp.register_callback_query_handler(game_menu, lambda msg: any(i in msg.data for i in [f'game_{i}' for i in db.Game.select(db.Game.id)]))
+    dp.register_callback_query_handler(send_csv_data, state='*', text='csv_export')
     # dp.register_callback_query_handler(seagm_games_data, text=seagm.seagm_url_dict.keys())
     executor.start_polling(dp, skip_updates=True)
     

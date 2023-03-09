@@ -1,5 +1,6 @@
 from peewee import *
 import datetime
+import csv
 
 # Создаем соединение с нашей базой данных
 # В нашем примере у нас это просто файл базы
@@ -61,42 +62,7 @@ class GameUrl(BaseModel):
             # create a unique on game/shop/url
             (('game_id', 'shop_id', 'url'), True),)
 
-# coda_url_dict = {
-#     'PUBG':'/de/pubg-mobile-uc-redeem-code',
-#     'Mobile Legends':'/de/mobile-legends',
-#     'Free Fire':'/de/free-fire',
-#     'Punishing: Grey Raven':'/de/punishing-gray-raven',
-#     'World War Heroes':'/de/world-war-heroes',
-#     'The Lord of the Rings: Rise to War':'/de/the-lord-of-the-rings-rise-to-war',
-#     '8 Ball Pool':'/de/8-ball-pool',
-#     'Time Raiders':'/de/time-raiders',
-#     'Captain Tsubasa: Dream Team':'/de/captain-tsubasa-dream-team',
-#     'Starfall Fantasy: Neverland':'/de/starfall-fantasy-neverland',
-#     'Lost Sanctuary: Eternal Origin':'/de/lost-sanctuary-eternal-origin',
-#     'Mirage: Perfect Skyline':'/de/mirage-perfect-skyline',
-#     'Tamashi: Rise of Yokai':'/de/tamashi-rise-of-yokai',
-#     'Sprite Fantasia':'/de/sprite-fantasia',
-#     'Dawn Era':'/de/dawn-era',
-#     'Thetan Arena':'/de/thetan-arena',
-#     'Super Sus':'/de/super-sus',
-#     'Cave Shooter':'/de/cave-shooter',
-#     'Wesward Adventure':'/de/westward-adventure',
-#     'Arena Mania: Magic Heroes':'/de/arena-mania-magic-heroes',
-#     'Miko Era: Twelve Myths':'/de/miko-era-twelve-myths',
-#     }
-    
-# seagm_url_dict = {
-#     'PUBG':'/fr/pubg-mobile',
-#     'Mobile Legends':'/fr/mobile-legends',
-#     'Free Fire':'/fr/free-fire-battlegrounds',
-#     'Punishing: Grey Raven':'/fr/punishing-gray-raven',
-#     'World War Heroes':'/fr/world-war-heroes',
-#     'The Lord of the Rings: Rise to War':'/fr/lotr-rise-to-war-gems',
-#     '8 Ball Pool':'/fr/8-ball-pool-coin-cash',
-#     'Tamashi: Rise of Yokai':'/fr/tamashi-rise-of-yokai',
-#     'Captain Tsubasa: Dream Team':'/fr/captain-tsubasa-dream-team',
-#     }
-
+# Получаем список url всех игр в зависимости от магазина (all - получаем вообще все игры)
 def get_all_shops_games(shop):
     if shop == 'all':
         coda_shop = GameUrl.select(GameUrl.game_id, Game.name).join(Game).where(GameUrl.shop_id==1)
@@ -135,6 +101,26 @@ def get_addons(game_id, region_code):
         pass
     print(message_text)
     return message_text
+
+# Забираем все данные из таблицы gameaddon, пишем в csv файл
+def get_csv_data():
+    b = GameAddon.select(
+        Game.name.alias('Game Name'), 
+        GameAddon.name.alias('Addon Name'), 
+        GameAddon.price.alias('Price'), 
+        GameAddon.currency.alias('Currency'), 
+        GameAddon.region_id.alias('Region'), 
+        PaymentChannel.name.alias('Payment Channel'), 
+        Shop.name.alias('Shop'),
+        GameAddon.updated.alias('Last Updated')
+    ).join(Shop).switch(GameAddon).join(PaymentChannel).switch(GameAddon).join(Game).dicts().execute()
+    with open('game_addon_data.csv', 'w', newline='') as out:
+        headers = list(b[0].keys())
+        writer = csv.DictWriter(out, fieldnames=headers)
+        writer.writeheader()
+        for row in b:
+            writer.writerow(row)
+ 
 
 # print(PaymentChannel.get(PaymentChannel.id == PaymentChannelCode.get(code=1201).paymentchannel_id).id)
 
