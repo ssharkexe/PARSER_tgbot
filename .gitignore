@@ -2,3 +2,12 @@ tests.json
 secret.py
 tests.py
 game_addon_data.csv
+__pycache__/buttons.cpython-39.pyc
+__pycache__/codashop_parser.cpython-39.pyc
+__pycache__/dbdata.cpython-39.pyc
+__pycache__/seagm_parser.cpython-39.pyc
+__pycache__/secret.cpython-39.pyc
+Dockerfile
+requirements.txt
+.dockerignore
+test_async.py

@@ -2,16 +2,25 @@
 # codashop.com и seagm.com
 # t.me/coda_parser_bot
 
-import seagm_parser as seagm, codashop_parser as coda, secret, re, json, dbdata as db, buttons as kb
-from aiogram import Bot, Dispatcher, executor, types 
+import seagm_parser as seagm, codashop_parser as coda, secret, re, json, dbdata as db, buttons as kb, asyncio, random
+from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import time
+from aiogram.utils.exceptions import NetworkError
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
+from aiogram.utils.exceptions import NetworkError
+from asyncio.exceptions import TimeoutError
+from aiohttp.client_exceptions import ClientConnectorError
+from asyncio import sleep
 
 class GameAddonsMenu(StatesGroup):
     choosing_addon = State()
+
+bot = Bot(token=secret.API_KEY)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 # Функция, обрабатывающая команду /start
 async def start(message: types.Message):
@@ -154,16 +163,48 @@ async def region_settings(callback_query: types.CallbackQuery):
 # Хэндлер отправки ботом файла со всеми данными 
 async def send_csv_data(callback_query: types.CallbackQuery):
   db.get_csv_data()
-  doc = open('game_addon_data.csv', 'rb')
-  await bot.send_document(callback_query.from_user.id, document=doc)
+  with open('game_addon_data.csv', 'rb') as doc:
+    await bot.send_document(callback_query.from_user.id, document=doc)
 
-# Запускаем бота
+# # Функция декоратора для перезапуска бота через 10 секунд после networkerror (потеря соединения с инетом)
+# def NetworkErrorHandler(func):
+#     def wrap(*args, **kwargs):
+#         while True:
+#             try:
+#                 func(*args, **kwargs)
+#             except NetworkError:
+#                 print(f'NetworkError excepted, wait 10 second')
+#                 sleep(10)
+#             except TimeoutError:
+#                 print(f'TimeoutError excepted, wait 10 second')
+#                 sleep(10)
+#             except ClientConnectorError:
+#                 print(f'ClientConnectorError excepted, wait 10 second')
+#                 sleep(10)
+#     return wrap
+
+# @NetworkErrorHandler
+
+
+async def endless_parser():
+    game_ids = [i.id for i in db.Game.select()]
+    region_codes = [i.code for i in db.Region.select()]
+    while True:
+        for game in game_ids:
+            for region in region_codes:
+                    try:
+                        data_coda = coda.get_codashop_data(game_id=game, shop_id=1, region_code=region)
+                        data_seagm = seagm.get_seagm_data(game_id=game, shop_id=2, region_code=region)
+                        sleeptimer = random.randint(600, 900)
+                    except AttributeError:
+                        sleeptimer = 1800
+                    # print(data_coda)
+                    print(f'Обновил данные по игре {game} в регионе {region}. Спим {sleeptimer} секунд')
+                    await sleep(sleeptimer)
+
+# Список хэндлеров и запуск бота через отдельную функцию с декоратором ошибки соединения
 if __name__ == '__main__':
-    bot = Bot(token=secret.API_KEY)
-    storage = MemoryStorage()
-    dp = Dispatcher(bot, storage=storage)
     dp.register_message_handler(start, commands='start')
-    # dp.register_callback_query_handler(seagm_giftcards_data, state=GameAddonsMenu.choosing_addon)
     dp.register_callback_query_handler(update_games_data, text_contains='update_')
     dp.register_callback_query_handler(show_addons_from_db, text_contains='addons_')
     dp.register_callback_query_handler(games_menu, lambda msg: any(i['name'] in msg.data for i in db.Shop.select(db.Shop.name).dicts()), state='*')
@@ -171,6 +212,7 @@ if __name__ == '__main__':
     dp.register_callback_query_handler(region_settings, state='*', text='reg_settings')
     dp.register_callback_query_handler(game_menu, lambda msg: any(i in msg.data for i in [f'game_{i}' for i in db.Game.select(db.Game.id)]))
     dp.register_callback_query_handler(send_csv_data, state='*', text='csv_export')
-    # dp.register_callback_query_handler(seagm_games_data, text=seagm.seagm_url_dict.keys())
+    loop = asyncio.get_event_loop()
+    loop.create_task(endless_parser())
     executor.start_polling(dp, skip_updates=True)
     

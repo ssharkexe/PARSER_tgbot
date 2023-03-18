@@ -99,14 +99,6 @@ def get_seagm_data(game_id, shop_id, region_code):
 
 # Функция парсинга страницы seagm с аддонами
 def seagm_parse(game_id, data, shop_id, region_code):
-    # html_filename = str(list(seagm_url_dict.keys())[list(seagm_url_dict.keys()).index(game)]) + '.html'
-    # for name, link in seagm_url_dict.items(): # из параметра game (это урл игры из словаря) выбираем название игры
-    #     if link == game:
-    #         print(f'Цены на аддоны к {name}:')
-    #     else:
-    #         pass
-    # with open(f'html_data/{html_filename}') as fp: 
-    #     soup = BeautifulSoup(fp, "html.parser") 
     data = data.find(string=re.compile('gtmDataObject'))
     try:
         data = data.split('prodectBuyList: ')[1]

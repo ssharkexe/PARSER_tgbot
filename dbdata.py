@@ -3,7 +3,6 @@ import datetime
 import csv
 
 # Создаем соединение с нашей базой данных
-# В нашем примере у нас это просто файл базы
 db = SqliteDatabase('db.sqlite')
 
 # Определяем базовую модель о которой будут наследоваться остальные
@@ -98,6 +97,7 @@ def get_addons(game_id, region_code):
             for b in GameAddon.select(GameAddon.price, GameAddon.currency, PaymentChannel.name, Shop.name).join(Shop).switch(GameAddon).join(PaymentChannel).where(GameAddon.name==addon, GameAddon.game_id==game_id, GameAddon.region==region_code):
                 message_text = message_text + f'{b.price} {b.currency}, {b.payment_channel_id.name}, {b.shop_id.name}\n'
     except GameUrl.DoesNotExist:
+        message_text = 'Отсутствует такая игра в БД'
         pass
     print(message_text)
     return message_text
@@ -130,7 +130,9 @@ def get_csv_data():
 
 # for i in GameAddon.select(GameAddon.name.distinct(), GameAddon.price, PaymentChannel.name, Shop.name).join(Shop).switch(GameAddon).join(PaymentChannel).where(GameAddon.game_id==1):
 #     print(i.name, ':', i.price, '_', i.payment_channel_id.name, '-->', i.shop_id.name)
-
+# db.connect()
+# db.create_tables([Game, Shop, PaymentChannel, PaymentChannelCode, Region, GameAddon], safe = True)
+# db.close()
 # for i in GameAddon.select(GameAddon.name, GameAddon.game_id, GameAddon.shop_id.name).join(Shop).dicts():
 #     print(i)
 
@@ -184,14 +186,14 @@ def get_csv_data():
 # current_game = Game.get(Game.id == 1)
 # print(GameUrl.get(game_id=current_game.id).url)
 
-# query = Game.select().where(Game.id < 10).limit(100).order_by(Game.id.asc())
-# print(query)
+# query = Game.select().where(Game.id < 10).limit(100).order_by(Game.id.asc()).execute()
+# for i in query:
+#     print(i)
 # games_selected = query.dicts().execute()
 # for game in games_selected:
 #     print(game['name'])
 
 
-#print(PaymentChannel.get(PaymentChannel.name == '325 UC').id)
 # game = Game(name='PUBG')
 # game.id=1
 # game.save()
@@ -208,3 +210,5 @@ def get_csv_data():
 # abs = GameUrl.select().join(Game).where(Game.id == 2)
 # for i in abs:
 #     print(i.game_id, i.shop_id, i.url)
+
+# print([i.code for i in Region.select()])
