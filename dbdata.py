@@ -211,4 +211,4 @@ def get_csv_data():
 # for i in abs:
 #     print(i.game_id, i.shop_id, i.url)
 
-# print([i.code for i in Region.select()])
+print([i.id for i in Game.select().order_by(Game.updated_date.asc())])

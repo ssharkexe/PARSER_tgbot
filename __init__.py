@@ -187,7 +187,7 @@ async def send_csv_data(callback_query: types.CallbackQuery):
 
 
 async def endless_parser():
-    game_ids = [i.id for i in db.Game.select()]
+    game_ids = [i.id for i in db.Game.select().order_by(db.Game.updated_date.asc())]
     region_codes = [i.code for i in db.Region.select()]
     while True:
         for game in game_ids:
