@@ -95,6 +95,7 @@ def get_seagm_data(game_id, shop_id, region_code):
             #     f.write(response.text)
             return seagm_parse(game_id, soup, shop_id, region_code)
     except db.GameUrl.DoesNotExist:
+        db.Game(id=game_id).save()
         return f'🔴 {db.Game.get(id=game_id).name} нет в SEAGM'
 
 # Функция парсинга страницы seagm с аддонами

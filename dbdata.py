@@ -81,6 +81,7 @@ def get_game_info(game_id, region_code):
     seagm_url = ''
     try:
         game_name = Game.get(id=game_id).name
+        # Смотрим список сохраненных цен на аддоны и выбираем посленее по дате (fn.MAX)
         last_updated = GameAddon.select(fn.MAX(GameAddon.updated)).where(GameAddon.game_id==game_id, GameAddon.region==region_code).scalar()
         codashop_url = GameUrl.get(shop_id=1, game_id=game_id).url
         seagm_url = GameUrl.get(shop_id=2, game_id=game_id).url
@@ -211,4 +212,4 @@ def get_csv_data():
 # for i in abs:
 #     print(i.game_id, i.shop_id, i.url)
 
-print([i.id for i in Game.select().order_by(Game.updated_date.asc())])
+# print([i.id for i in Game.select().order_by(Game.updated_date.asc())])

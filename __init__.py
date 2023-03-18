@@ -95,11 +95,19 @@ async def update_games_data(callback_query: types.CallbackQuery):
     await bot.answer_callback_query(callback_query.id)
     data_coda = coda.get_codashop_data(game_id=game_id, shop_id=1, region_code=region_code)
     data_seagm = seagm.get_seagm_data(game_id=game_id, shop_id=2, region_code=region_code)
-    updated_text = f'{data_coda}\n{data_seagm}\n{db.get_game_info(game_id, region_code)[1]:%d.%m.%Y %H:%M}'
-    await bot.send_message(
-        callback_query.from_user.id,
-        text=updated_text,
-        reply_markup=kb.make_inline_keyboard(3, game_id, region_code))
+    try:
+        updated_text = f'{data_coda}\n{data_seagm}\n{db.get_game_info(game_id, region_code)[1]:%d.%m.%Y %H:%M}'
+        await bot.send_message(
+            callback_query.from_user.id,
+            text=updated_text,
+            reply_markup=kb.make_inline_keyboard(3, game_id, region_code))
+    except TypeError:
+        updated_text = f'{data_coda}\n{data_seagm}'
+        await bot.send_message(
+            callback_query.from_user.id,
+            text=updated_text,
+            reply_markup=kb.make_inline_keyboard(2, game_id, region_code))
+
 
 # # Хэндлер коллбэка для инлайн-кнопки игр SEAGM
 # async def seagm_games_data(callback_query: types.CallbackQuery):
