@@ -88,13 +88,11 @@ def codashop_parse(game_id, data, shop_id, region_code):
                                             currency = currency[b['price']['currency']],
                                             region = region_code).execute()
                     db.Game(id=game_id).save()
-                    return f'🟢 Сохранил данные Codashop по {db.Game.get(id=game_id).name}'
                 except db.PaymentChannelCode.DoesNotExist:
                     print(b['paymentChannel']['id'] + ' - такого метода оплаты не существует в базе')
-                    return f'🔴 Не сохранил, метода оплаты нет в базе'
                 except KeyError:
                     print(b['price']['currency'] + ' - такой валюты не существует в базе')
-                    return f'🔴 Не сохранил, такой валюты нет в базе'
+        return f'🟢 Сохранил данные Codashop по {db.Game.get(id=game_id).name}'
     except TypeError:
         db.Game(id=game_id).save()
         return f'🔴 В этом регионе Codashop отсутствует {db.Game.get(id=game_id).name}'
