@@ -11,3 +11,4 @@ Dockerfile
 requirements.txt
 .dockerignore
 test_async.py
+.vscode/settings.json
