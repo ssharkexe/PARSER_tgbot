@@ -94,7 +94,7 @@ def get_seagm_data(game_id, shop_id, region_code):
             # with open(f'html/test.html', "w") as f:
             #     f.write(response.text)
             return seagm_parse(game_id, soup, shop_id, region_code)
-    except db.GameUrl.DoesNotExist:
+    except db.DoesNotExist:
         db.Game(id=game_id).save()
         return f'🔴 {db.Game.get(id=game_id).name} нет в SEAGM'
 
@@ -122,19 +122,19 @@ def seagm_addon_parse(url, game):
         return f'🟠 Некорректный url для игры на seagm.com' # seagm_final_parse(dict1, game)
 
 # Тестовая функция для парсинга html seagm со списком гифткарт для игры
-def seagm_parse_giftcard(game):
-    html_filename = str(list(seagm_url_dict.keys())[list(seagm_url_dict.keys()).index(game)]) + '.html'
-    with open(f'html_data/{html_filename}') as fp: 
-        soup = BeautifulSoup(fp, "html.parser") 
-    html_data = soup.find_all(attrs={'ga-enecommerce':re.compile(r'gamehome&&[^"]')})
-    #print(html_data)
-    addons = [match.groups() for match in re.finditer(r'href="([^"]+)" title="([^"]*)"', str(html_data))] # !!! находим все (аддны, пополнения и тд) кроме гифткарт
-    giftcard_name_list = [giftcard[1] for giftcard in addons] # сохраняем через цикл перечень названий гифткарт в список
-    giftcard_url_list = ['https://www.seagm.com' + giftcard[0] for giftcard in addons] # сохраняем через цикл перечень url
-    giftcard_len = len(giftcard_url_list) # сохраняем длину списка гифткарт, чтобы потом обратиться к нужной ссылке по индексу
-    print(giftcard_name_list)
-    print(giftcard_url_list)
-    return giftcard_name_list, giftcard_url_list
+# def seagm_parse_giftcard(game):
+#     html_filename = str(list(seagm_url_dict.keys())[list(seagm_url_dict.keys()).index(game)]) + '.html'
+#     with open(f'html_data/{html_filename}') as fp: 
+#         soup = BeautifulSoup(fp, "html.parser") 
+#     html_data = soup.find_all(attrs={'ga-enecommerce':re.compile(r'gamehome&&[^"]')})
+#     #print(html_data)
+#     addons = [match.groups() for match in re.finditer(r'href="([^"]+)" title="([^"]*)"', str(html_data))] # !!! находим все (аддны, пополнения и тд) кроме гифткарт
+#     giftcard_name_list = [giftcard[1] for giftcard in addons] # сохраняем через цикл перечень названий гифткарт в список
+#     giftcard_url_list = ['https://www.seagm.com' + giftcard[0] for giftcard in addons] # сохраняем через цикл перечень url
+#     giftcard_len = len(giftcard_url_list) # сохраняем длину списка гифткарт, чтобы потом обратиться к нужной ссылке по индексу
+#     print(giftcard_name_list)
+#     print(giftcard_url_list)
+#     return giftcard_name_list, giftcard_url_list
 
 def seagm_final_parse(game_id, data, shop_id, region_code):
     result = [match.groups() for match in re.finditer(r'"item_name":"([a-zA-Z0-9 ._+-]+)","price":"([0-9.]+)"[^}{]*"discount":"([0-9 .]+)","currency":"([A-Z]+)"', data)]
@@ -154,7 +154,7 @@ def seagm_final_parse(game_id, data, shop_id, region_code):
                                     currency = i[3],
                                     region = region_code).execute()
             db.Game(id=game_id).save()
-        except db.PaymentChannel.DoesNotExist:
+        except db.DoesNotExist:
             pass
     return f'🟢 Сохранил данные SEAGM по {db.Game.get(id=game_id).name}'
 

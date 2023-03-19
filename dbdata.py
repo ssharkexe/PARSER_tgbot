@@ -85,7 +85,7 @@ def get_game_info(game_id: int, region_code: str) -> tuple:
         last_updated = GameAddon.select(fn.MAX(GameAddon.updated)).where(GameAddon.game_id==game_id, GameAddon.region==region_code).scalar()
         codashop_url = GameUrl.get(shop_id=1, game_id=game_id).url
         seagm_url = GameUrl.get(shop_id=2, game_id=game_id).url
-        print(seagm_url, codashop_url)
+        # print(seagm_url, codashop_url)
     except DoesNotExist:
         print('Такого урла нет')
         pass
