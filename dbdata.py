@@ -1,6 +1,6 @@
 from peewee import *
-import datetime
-import csv
+import datetime, csv, peewee
+from peewee import DoesNotExist
 
 # Создаем соединение с нашей базой данных
 db = SqliteDatabase('db.sqlite')
@@ -74,7 +74,7 @@ def get_all_shops_games(shop):
     else:
         pass
 
-def get_game_info(game_id, region_code):
+def get_game_info(game_id: int, region_code: str) -> tuple:
     game_name = ''
     last_updated = ''
     codashop_url = ''
@@ -85,11 +85,13 @@ def get_game_info(game_id, region_code):
         last_updated = GameAddon.select(fn.MAX(GameAddon.updated)).where(GameAddon.game_id==game_id, GameAddon.region==region_code).scalar()
         codashop_url = GameUrl.get(shop_id=1, game_id=game_id).url
         seagm_url = GameUrl.get(shop_id=2, game_id=game_id).url
-    except GameUrl.DoesNotExist:
+        print(seagm_url, codashop_url)
+    except DoesNotExist:
+        print('Такого урла нет')
         pass
     return game_name, last_updated, codashop_url, seagm_url
 
-def get_addons(game_id, region_code):
+def get_addons(game_id, region_code) -> str:
     try:
         addons_list = [i.name for i in GameAddon.select(GameAddon.name).distinct().where(GameAddon.game_id==game_id, GameAddon.region==region_code)]
         message_text = ''
@@ -97,20 +99,20 @@ def get_addons(game_id, region_code):
             message_text = message_text + f'<b>{addon}:</b>\n'
             for b in GameAddon.select(GameAddon.price, GameAddon.currency, PaymentChannel.name, Shop.name).join(Shop).switch(GameAddon).join(PaymentChannel).where(GameAddon.name==addon, GameAddon.game_id==game_id, GameAddon.region==region_code):
                 message_text = message_text + f'{b.price} {b.currency}, {b.payment_channel_id.name}, {b.shop_id.name}\n'
-    except GameUrl.DoesNotExist:
+    except DoesNotExist:
         message_text = 'Отсутствует такая игра в БД'
         pass
     print(message_text)
     return message_text
 
 # Забираем все данные из таблицы gameaddon, пишем в csv файл
-def get_csv_data():
+def get_csv_data() -> None:
     b = GameAddon.select(
         Game.name.alias('Game Name'), 
         GameAddon.name.alias('Addon Name'), 
         GameAddon.price.alias('Price'), 
         GameAddon.currency.alias('Currency'), 
-        GameAddon.region_id.alias('Region'), 
+        GameAddon.region.alias('Region'), 
         PaymentChannel.name.alias('Payment Channel'), 
         Shop.name.alias('Shop'),
         GameAddon.updated.alias('Last Updated')

@@ -57,7 +57,7 @@ async def game_menu(callback_query: types.CallbackQuery):
     await callback_query.message.delete()
     # await callback_query.message.edit_reply_markup()
     await bot.answer_callback_query(callback_query.id)
-    game_id = callback_query.data.split('_')[-2]
+    game_id = int(callback_query.data.split('_')[-2])
     region_code = callback_query.data.split('_')[-1]
     country = db.Region.get(code=region_code).country
     game_data = db.get_game_info(game_id, region_code)
@@ -90,7 +90,7 @@ async def game_menu(callback_query: types.CallbackQuery):
 # Хэндлер коллбэка для обновление данных в базе
 async def update_games_data(callback_query: types.CallbackQuery):
     await callback_query.message.edit_reply_markup()
-    game_id = callback_query.data.split('_')[-2]
+    game_id = int(callback_query.data.split('_')[-2])
     region_code = callback_query.data.split('_')[-1]
     await bot.answer_callback_query(callback_query.id)
     data_coda = coda.get_codashop_data(game_id=game_id, shop_id=1, region_code=region_code)

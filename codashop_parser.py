@@ -37,7 +37,7 @@ currency = {
 }
 
 # Функция получения JSON ответа c данными от codashop
-def get_codashop_data(game_id, shop_id, region_code):
+def get_codashop_data(game_id, shop_id, region_code) -> str:
     try:
         region_code_upper = db.Region.get(code=region_code).code.upper()
         game_url = f'/{region_code}/{db.GameUrl.get(db.GameUrl.game_id == game_id, db.GameUrl.shop_id == shop_id).url}'
@@ -68,12 +68,12 @@ def get_codashop_data(game_id, shop_id, region_code):
         fetched_dict = json.loads(response.text)
         # print(json.dumps(fetched_dict, indent=4))
         return codashop_parse(game_id=game_id, data=fetched_dict, shop_id=shop_id, region_code=region_code)
-    except db.GameUrl.DoesNotExist:
+    except db.DoesNotExist:
         db.Game(id=game_id).save()
         return f'{db.Game.get(id=game_id).name} нет в Codashop'
 
 # Функция парсинга JSON ответа c данными от codashop и их запись в таблицу
-def codashop_parse(game_id, data, shop_id, region_code):
+def codashop_parse(game_id, data, shop_id, region_code) -> str:
     try:
         for i in data['data']['getProductPageInfo']['denominationGroups']:
             game_addon_name = i['displayText']
@@ -88,7 +88,7 @@ def codashop_parse(game_id, data, shop_id, region_code):
                                             currency = currency[b['price']['currency']],
                                             region = region_code).execute()
                     db.Game(id=game_id).save()
-                except db.PaymentChannelCode.DoesNotExist:
+                except db.DoesNotExist:
                     print(b['paymentChannel']['id'] + ' - такого метода оплаты не существует в базе')
                 except KeyError:
                     print(b['price']['currency'] + ' - такой валюты не существует в базе')
