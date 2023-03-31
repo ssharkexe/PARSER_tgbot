@@ -38,6 +38,10 @@ cookies = {
     '__cf_bm':'QZ6qOlY4ixwzznfAmI0APTrqG6qKy5A0uaW6242mYM-1678012716-0-AZEt8oGcp4gSXyj4UdjZq3S02FsI9B3v924x0a9h7eax5gM71N0oPNf2+AGYA5TNVlH4C7AweGs0vzW/m4rqEaJYDWhy9KP4fBShbqqX8ySZeia/HEdcKhsruIaDimQ5pbbDUpZHUiXe67UejvN3jPg='
 }
 
+# у SEAGM есть фиксированная комиссия (процент и фикс) при оплате картой, сохраним ее в переменную
+fee_percent = float(1.029)
+fee_fix = float(0.21)
+
 # s = requests.Session()
 # s.headers.update(headers2)
 # s.cookies.clear()
@@ -144,7 +148,7 @@ def seagm_final_parse(game_id, data, shop_id, region_code):
         # full_desc = f'{i[0]} - {round(float(i[1])-float(i[2]), 2)} {i[3]}'
         # addons_full_string = addons_full_string + '\n' + full_desc
         try:
-            price = round(float(i[1])-float(i[2]), 2)
+            price = round((float(i[1])-float(i[2])) * fee_percent + fee_fix, 2)
             print(f'Обрабатываем запись {i[0]}, тип оплаты кредитка (2), цена {price}')
             db.GameAddon.replace(name = i[0], 
                                     game_id = game_id, 
