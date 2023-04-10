@@ -39,7 +39,11 @@ async def back_to_main_menu(callback_query: types.CallbackQuery):
     region_code = callback_query.data.split('_')[-1]
     country = db.Region.get(code=region_code).country
     print(region_code)
-    await bot.send_message(callback_query.from_user.id, text=f'Главное меню.\nРегион <b>{country}</b>', parse_mode='HTML', reply_markup=kb.list_of_all_shop_games_kb(region_code))
+    await bot.send_message(
+        callback_query.from_user.id, 
+        text=f'Главное меню.\nРегион <b>{country}</b>', 
+        parse_mode='HTML', 
+        reply_markup=kb.list_of_all_shop_games_kb(region_code))
     state = Dispatcher.get_current().current_state()
     await state.finish()
 
@@ -50,7 +54,11 @@ async def games_menu(callback_query: types.CallbackQuery):
     country = db.Region.get(code=region_code).country
     await callback_query.message.delete()
     await bot.answer_callback_query(callback_query.id)
-    await bot.send_message(callback_query.from_user.id, text=f'Список игр, доступных для парсинга через {shop}\nРегион <b>{country}</b>', parse_mode='HTML', reply_markup=kb.list_of_games_kb(shop, region_code))
+    await bot.send_message(
+        callback_query.from_user.id, 
+        text=f'Список игр, доступных для парсинга через {shop}\nРегион <b>{country}</b>', 
+        parse_mode='HTML', 
+        reply_markup=kb.list_of_games_kb(shop, region_code))
 
 # Хэндлер меню игры
 async def game_menu(callback_query: types.CallbackQuery):
