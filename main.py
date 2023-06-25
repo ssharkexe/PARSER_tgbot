@@ -1,33 +1,25 @@
-# Бот-парсер сайтов для сравнения цен
+# Бот-парсер сайтов для сравнения цен на аддоны для мобильных игр. Демонстрация работы с requests, re, beautifulsoup, graphql
 # codashop.com и seagm.com
-# t.me/coda_parser_bot
 
-import seagm_parser as seagm, codashop_parser as coda, secret, re, json, dbdata as db, buttons as kb, asyncio, random
+import seagm_parser as seagm, codashop_parser as coda, dbdata as db, buttons as kb, asyncio, random, os
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from datetime import time
-from aiogram.utils.exceptions import NetworkError
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from aiogram.utils.exceptions import NetworkError
-from asyncio.exceptions import TimeoutError
-from aiohttp.client_exceptions import ClientConnectorError
 from asyncio import sleep
+
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN')
 
 class GameAddonsMenu(StatesGroup):
     choosing_addon = State()
 
-bot = Bot(token=secret.API_KEY)
+bot = Bot(token=TELEGRAM_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 # Функция, обрабатывающая команду /start
 async def start(message: types.Message):
     region_code = 'es'
-    await message.answer(text="""Привет! Я немного обновился, теперь сохраняю все данные в SQL-базу.\n
-Вот список игр, по которым я могу выгрузить данные c SEAGM и Codashop. Или можешь выбрать магазин и посмотреть все игры из него.\n
-Регион по умолчанию - Испания (Spain, es), его можно изменить в настройках ниже""",
+    await message.answer(text="Привет! Начнем работу?",
                          reply_markup=kb.list_of_all_shop_games_kb(region_code))
     state = Dispatcher.get_current().current_state()
     await state.finish()
@@ -116,46 +108,6 @@ async def update_games_data(callback_query: types.CallbackQuery):
             text=updated_text,
             reply_markup=kb.make_inline_keyboard(2, game_id, region_code))
 
-
-# # Хэндлер коллбэка для инлайн-кнопки игр SEAGM
-# async def seagm_games_data(callback_query: types.CallbackQuery):
-#     await callback_query.message.delete()
-#     #await callback_query.message.edit_reply_markup()
-#     await bot.answer_callback_query(callback_query.id)
-#     seagm.get_html_content(str(callback_query.data))
-#     params = seagm.seagm_parse(str(callback_query.data))
-#     if isinstance(params, (list, tuple)):
-#         #print(params)
-#         await GameAddonsMenu.choosing_addon.set()
-#         state = Dispatcher.get_current().current_state()
-#         print(state)
-#         await state.update_data(name_list=params[0], url_list=params[1], game=str(callback_query.data)) # сохраняем в память FSM список аддонов, список url и название самой игры
-#         SEAGM_GIFTCARD_BTN = InlineKeyboardMarkup(row_width=1) 
-#         seagm_giftcard_list = [InlineKeyboardButton(text = name, callback_data = name) for name, url in zip(params[0], params[1])] # формируем перечень из разделов с аддонами
-#         #print(seagm_giftcard_list)
-#         SEAGM_GIFTCARD_BTN.add(*seagm_giftcard_list)
-#         await bot.send_message(
-#             callback_query.from_user.id,
-#             text='У игры есть несколько разделов по продаже аддонов:',
-#             reply_markup=SEAGM_GIFTCARD_BTN)
-#     #print(callback_query.data)
-#     else:
-#         await bot.send_message(
-#             callback_query.from_user.id,
-#             text=seagm.seagm_parse(str(callback_query.data)),
-#             reply_markup=MAIN_MENU_BTNS)
-
-# # Хэндлер коллбэка для инлайн-кнопки гифткарт SEAGM
-# async def seagm_giftcards_data(callback_query: types.CallbackQuery, state: FSMContext):
-#     await callback_query.message.delete()
-#     #await callback_query.message.edit_reply_markup() # или удаление сообщения целиком, или скрытие inline кнопок
-#     data = await state.get_data()
-#     await bot.send_message(
-#             callback_query.from_user.id,
-#             text=seagm.seagm_addon_parse(url=data['url_list'][data['name_list'].index(callback_query.data)], game = callback_query.data),
-#             reply_markup=MAIN_MENU_BTNS)
-#     await state.finish()
-
 # Хэндлер отображения списка аддонов из базы по конкретной игре
 async def show_addons_from_db(callback_query: types.CallbackQuery):
     await callback_query.message.edit_reply_markup()
@@ -182,26 +134,7 @@ async def send_csv_data(callback_query: types.CallbackQuery):
   with open('game_addon_data.csv', 'rb') as doc:
     await bot.send_document(callback_query.from_user.id, document=doc)
 
-# # Функция декоратора для перезапуска бота через 10 секунд после networkerror (потеря соединения с инетом)
-# def NetworkErrorHandler(func):
-#     def wrap(*args, **kwargs):
-#         while True:
-#             try:
-#                 func(*args, **kwargs)
-#             except NetworkError:
-#                 print(f'NetworkError excepted, wait 10 second')
-#                 sleep(10)
-#             except TimeoutError:
-#                 print(f'TimeoutError excepted, wait 10 second')
-#                 sleep(10)
-#             except ClientConnectorError:
-#                 print(f'ClientConnectorError excepted, wait 10 second')
-#                 sleep(10)
-#     return wrap
-
-# @NetworkErrorHandler
-
-
+# Фоновый процесс для парсинга данных 
 async def endless_parser():
     game_ids = [i.id for i in db.Game.select().order_by(db.Game.updated_date.asc())]
     region_codes = [i.code for i in db.Region.select()]

@@ -2,13 +2,8 @@ tests.json
 secret.py
 tests.py
 game_addon_data.csv
-__pycache__/buttons.cpython-39.pyc
-__pycache__/codashop_parser.cpython-39.pyc
-__pycache__/dbdata.cpython-39.pyc
-__pycache__/seagm_parser.cpython-39.pyc
-__pycache__/secret.cpython-39.pyc
-Dockerfile
-requirements.txt
+__pycache__/
 .dockerignore
 test_async.py
-.vscode/settings.json
+.vscode/
+venv/

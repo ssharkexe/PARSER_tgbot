@@ -1,7 +1,8 @@
 # Парсер сайта seagm
 
-import requests, re, json, dbdata as db
+import requests, re, dbdata as db
 from bs4 import BeautifulSoup
+from requests import utils
 
 # Параметры для html запросов
 html_parameters = {'accept-language': 'en-US', 
@@ -42,23 +43,6 @@ cookies = {
 fee_percent = float(1.029)
 fee_fix = float(0.21)
 
-# s = requests.Session()
-# s.headers.update(headers2)
-# s.cookies.clear()
-# s.cookies.set('seagm_store_id', 'lf1sof51i9r28ql3or03kfiflu')
-# s.get('https://www.seagm.com/es/', headers=headers2)
-# resp = requests.get('https://www.seagm.com/es-es/pubg-mobile-uc-top-up-global')
-# post_params = {'region': 'ru', 'region_lang': 'none', 'language': 'es', 'currency': 'EUR', 'request_uri': '/es'}
-# query_params = {'csrfToken': '055c4d7a90450934a43e34e920688f58'}
-# resp = s.post("https://www.seagm.com/es/setting", params=query_params, data=post_params, headers=headers)
-# print(resp.url)
-# my_cookies = requests.utils.dict_from_cookiejar(s.cookies)
-# print(my_cookies)
-# print(resp.status_code)
-# resp = s.get('https://www.seagm.com/es/pubg-mobile-uc-top-up-global')
-
-# print(resp.text)
-
 # Получаем html по игре
 def get_seagm_data(game_id, shop_id, region_code):
     try:
@@ -66,11 +50,8 @@ def get_seagm_data(game_id, shop_id, region_code):
         game_url = f'/{region_code}/{db.GameUrl.get(db.GameUrl.game_id == game_id, db.GameUrl.shop_id == shop_id).url}'
         full_url = f'{shop_url}{game_url}'
         p = requests.Session()
-        # p.headers.update(headers3)
         get_request = p.get(full_url)
-        # store_id = p.cookies.get_dict()['seagm_store_id']
-        # print(f'store id = {store_id}')
-        csrf_token = re.search(r'csrfToken=([a-zA-Z0-9]+)"', get_request.text).groups()[0]
+        csrf_token = re.search(r'csrfToken=([a-zA-Z0-9]+)"', get_request.text).groups()[0] # type: ignore
         print(f'csrf = {csrf_token}')
         CUR = 'EUR'
         post_header = {            
@@ -84,19 +65,14 @@ def get_seagm_data(game_id, shop_id, region_code):
         post_request = p.post(f'{shop_url}/{region_code}/setting', params=query_params, data=post_params, headers=post_header, cookies=p.cookies)
         print(post_request.url)
         print(post_request.status_code)
-        # store_id = p.cookies.get_dict()['seagm_store_id']
-        # print(f'store id = {store_id}')
         response = p.get(full_url, cookies=p.cookies)
-        print(re.search(r'Currency: \W([a-zA-Z0-9]+)\W,\s+},', response.text ).groups()[0])
+        print(re.search(r'Currency: \W([a-zA-Z0-9]+)\W,\s+},', response.text ).groups()[0]) # type: ignore
         p.close()
         if response.status_code == 404:
             return f'🟠 Некорректный url игры на SEAGM'
         else:
-            print(requests.utils.dict_from_cookiejar(p.cookies))
+            print(utils.dict_from_cookiejar(p.cookies))
             soup = BeautifulSoup(response.text, 'html.parser')
-            # print(soup)
-            # with open(f'html/test.html', "w") as f:
-            #     f.write(response.text)
             return seagm_parse(game_id, soup, shop_id, region_code)
     except db.DoesNotExist:
         db.Game(id=game_id).save()
@@ -119,7 +95,7 @@ def seagm_addon_parse(url, game):
     soup = BeautifulSoup(response.content, "html.parser")
     dict1 = soup.find(string=re.compile('gtmDataObject'))
     try:
-        dict1 = dict1.split('prodectBuyList: ')[1]
+        dict1 = dict1.split('prodectBuyList: ')[1] # type: ignore
     except AttributeError:
         print('Ошибка парсинга')
     else:
@@ -142,11 +118,7 @@ def seagm_addon_parse(url, game):
 
 def seagm_final_parse(game_id, data, shop_id, region_code):
     result = [match.groups() for match in re.finditer(r'"item_name":"([a-zA-Z0-9 ._+-]+)","price":"([0-9.]+)"[^}{]*"discount":"([0-9 .]+)","currency":"([A-Z]+)"', data)]
-    # addons_full_string = f'🔹 {game} 🔹\n'
-    # print(result)
     for i in result:
-        # full_desc = f'{i[0]} - {round(float(i[1])-float(i[2]), 2)} {i[3]}'
-        # addons_full_string = addons_full_string + '\n' + full_desc
         try:
             price = round((float(i[1])-float(i[2])) * fee_percent + fee_fix, 2)
             print(f'Обрабатываем запись {i[0]}, тип оплаты кредитка (2), цена {price}')
@@ -161,8 +133,3 @@ def seagm_final_parse(game_id, data, shop_id, region_code):
         except db.DoesNotExist:
             pass
     return f'🟢 Сохранил данные SEAGM по {db.Game.get(id=game_id).name}'
-
-#seagm_parse_giftcard('rampage')
-#get_html_content('rampage')
-#seagm_parse_giftcard('pubg_addons_seagm')
-# get_seagm_data(1, 2)
