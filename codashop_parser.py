@@ -37,7 +37,7 @@ currency = {
 }
 
 # Функция получения JSON ответа c данными от codashop
-def get_codashop_data(game_id, shop_id, region_code) -> str:
+def get_codashop_data(game_id: int, shop_id: int, region_code: str) -> str:
     try:
         region_code_upper = db.Region.get(code=region_code).code.upper()
         game_url = f'/{region_code}/{db.GameUrl.get(db.GameUrl.game_id == game_id, db.GameUrl.shop_id == shop_id).url}'
@@ -73,7 +73,7 @@ def get_codashop_data(game_id, shop_id, region_code) -> str:
         return f'{db.Game.get(id=game_id).name} нет в Codashop'
 
 # Функция парсинга JSON ответа c данными от codashop и их запись в таблицу
-def codashop_parse(game_id, data, shop_id, region_code) -> str:
+def codashop_parse(game_id: int, data: dict, shop_id: int, region_code: str) -> str:
     try:
         for i in data['data']['getProductPageInfo']['denominationGroups']:
             game_addon_name = i['displayText']

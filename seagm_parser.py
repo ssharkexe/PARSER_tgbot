@@ -44,7 +44,7 @@ fee_percent = float(1.029)
 fee_fix = float(0.21)
 
 # Получаем html по игре
-def get_seagm_data(game_id, shop_id, region_code):
+def get_seagm_data(game_id: int, shop_id: int, region_code: str) -> str:
     try:
         shop_url = db.Shop.get(id=shop_id).url
         game_url = f'/{region_code}/{db.GameUrl.get(db.GameUrl.game_id == game_id, db.GameUrl.shop_id == shop_id).url}'
@@ -79,25 +79,28 @@ def get_seagm_data(game_id, shop_id, region_code):
         return f'🔴 {db.Game.get(id=game_id).name} нет в SEAGM'
 
 # Функция парсинга страницы seagm с аддонами
-def seagm_parse(game_id, data, shop_id, region_code):
-    data = data.find(string=re.compile('gtmDataObject'))
+def seagm_parse(game_id: int, soup: BeautifulSoup, shop_id: int, region_code: str):
+    data = soup.find(string=re.compile('gtmDataObject'))
+    print(f'Тип данныех после soup.find {type(data)}')
     try:
-        data = data.split('prodectBuyList: ')[1]
+        parse_result: str = data.split('prodectBuyList: ')[1] 
+        print(f'Тип данныех после data.split {type(parse_result)}')
     except AttributeError:
         print('Некорректный url для игры на seagm.com')
         return f'🟠 Некорректный url для игры на seagm.com' # seagm_parse_giftcard(game)
     else:
-        return seagm_final_parse(game_id, data, shop_id, region_code)
+        return seagm_final_parse(game_id, parse_result, shop_id, region_code)
 
 # Функция парсинга страницы seagm с аддонами
-def seagm_addon_parse(url, game):
+def seagm_addon_parse(url: str, game: int) -> str:
     response = requests.get(url, html_parameters)
     soup = BeautifulSoup(response.content, "html.parser")
     dict1 = soup.find(string=re.compile('gtmDataObject'))
     try:
-        dict1 = dict1.split('prodectBuyList: ')[1] # type: ignore
+        dict1 = dict1.split('prodectBuyList: ')[1]
     except AttributeError:
         print('Ошибка парсинга')
+        return f'🟠 Ошибка парсинга на seagm.com'
     else:
         return f'🟠 Некорректный url для игры на seagm.com' # seagm_final_parse(dict1, game)
 
@@ -116,7 +119,7 @@ def seagm_addon_parse(url, game):
 #     print(giftcard_url_list)
 #     return giftcard_name_list, giftcard_url_list
 
-def seagm_final_parse(game_id, data, shop_id, region_code):
+def seagm_final_parse(game_id: int, data: str, shop_id: int, region_code: str) -> str:
     result = [match.groups() for match in re.finditer(r'"item_name":"([a-zA-Z0-9 ._+-]+)","price":"([0-9.]+)"[^}{]*"discount":"([0-9 .]+)","currency":"([A-Z]+)"', data)]
     for i in result:
         try:

@@ -1,4 +1,4 @@
-from peewee import *
+from peewee import * # type: ignore
 import datetime, csv
 from peewee import DoesNotExist
 
@@ -62,7 +62,7 @@ class GameUrl(BaseModel):
             (('game_id', 'shop_id', 'url'), True),)
 
 # Получаем список url всех игр в зависимости от магазина (all - получаем вообще все игры)
-def get_all_shops_games(shop):
+def get_all_shops_games(shop: str) -> dict:
     if shop == 'all':
         coda_shop = GameUrl.select(GameUrl.game_id, Game.name).join(Game).where(GameUrl.shop_id==1)
         seagm_shop = GameUrl.select(GameUrl.game_id, Game.name).join(Game).where(GameUrl.shop_id==2)
@@ -72,7 +72,8 @@ def get_all_shops_games(shop):
     elif shop == 'SEAGM':
         return GameUrl.select(GameUrl.game_id, Game.name).join(Game).where(GameUrl.shop_id==2).dicts()
     else:
-        pass
+        print('Неизвестный магазин!')
+        return {}
 
 def get_game_info(game_id: int, region_code: str) -> tuple:
     game_name = ''
@@ -91,7 +92,7 @@ def get_game_info(game_id: int, region_code: str) -> tuple:
         pass
     return game_name, last_updated, codashop_url, seagm_url
 
-def get_addons(game_id, region_code) -> str:
+def get_addons(game_id: int, region_code: str) -> str:
     try:
         addons_list = [i.name for i in GameAddon.select(GameAddon.name).distinct().where(GameAddon.game_id==game_id, GameAddon.region==region_code)]
         message_text = ''

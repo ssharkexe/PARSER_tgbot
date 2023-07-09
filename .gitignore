@@ -7,3 +7,5 @@ __pycache__/
 test_async.py
 .vscode/
 venv/
+.DS_Store
+.env

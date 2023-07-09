@@ -112,7 +112,7 @@ async def update_games_data(callback_query: types.CallbackQuery):
 async def show_addons_from_db(callback_query: types.CallbackQuery):
     await callback_query.message.edit_reply_markup()
     print(f'В колбэке приходит: {callback_query.data}')
-    game_id = callback_query.data.split('_')[-2]
+    game_id = int(callback_query.data.split('_')[-2])
     region_code = callback_query.data.split('_')[-1]
     await bot.send_message(
             callback_query.from_user.id,
@@ -135,7 +135,7 @@ async def send_csv_data(callback_query: types.CallbackQuery):
     await bot.send_document(callback_query.from_user.id, document=doc)
 
 # Фоновый процесс для парсинга данных 
-async def endless_parser():
+async def endless_parser() -> None:
     game_ids = [i.id for i in db.Game.select().order_by(db.Game.updated_date.asc())]
     region_codes = [i.code for i in db.Region.select()]
     while True:
